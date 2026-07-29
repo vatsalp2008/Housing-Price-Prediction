@@ -21,10 +21,11 @@ from utils.metrics import PerformanceReport
 from feature_engineering import FeatureEngineeringPipeline
 from models.stacked_ensemble import StackedEnsembleModel
 from models.hyperparameter_optimization import OptunaOptimizer
-from explainability.shap_analysis import SHAPAnalyzer
-from explainability.lime_analysis import LIMEAnalyzer
 from validation.residual_analysis import ResidualAnalyzer
 from validation.permutation_importance import PermutationImportanceAnalyzer
+
+# SHAPAnalyzer and LIMEAnalyzer are imported inside run_explainability so that
+# the train and predict modes do not require shap and lime to be installed.
 
 # Setup logging
 logging.basicConfig(
@@ -194,7 +195,12 @@ class HousingValuationPipeline:
         logger.info("\n" + "=" * 80)
         logger.info("STEP 7: EXPLAINABILITY ANALYSIS (XAI)")
         logger.info("=" * 80)
-        
+
+        # Imported here rather than at module scope: these are the only heavy
+        # optional dependencies, and the other modes should not need them
+        from explainability.shap_analysis import SHAPAnalyzer
+        from explainability.lime_analysis import LIMEAnalyzer
+
         # SHAP analysis
         logger.info("\nGenerating SHAP analysis...")
         shap_analyzer = SHAPAnalyzer(
