@@ -33,6 +33,14 @@ class StackedEnsembleModel:
         self.model = None
         self.feature_names = None
         
+    def _is_fitted(self) -> bool:
+        """Whether the stacking regressor has been fitted.
+
+        build_model() populates self.model without fitting it, so a plain
+        `self.model is None` check is not enough to know predictions are safe.
+        """
+        return self.model is not None and hasattr(self.model, 'estimators_')
+
     def build_model(self):
         """Build the stacking regressor"""
         # Get base learners
@@ -94,9 +102,9 @@ class StackedEnsembleModel:
         Returns:
             Predictions
         """
-        if self.model is None:
+        if not self._is_fitted():
             raise ValueError("Model not trained. Call train() first.")
-        
+
         return self.model.predict(X)
     
     def cross_validate(self, X, y, cv: int = None):
@@ -144,9 +152,9 @@ class StackedEnsembleModel:
         Returns:
             Dictionary of base learner predictions
         """
-        if self.model is None:
+        if not self._is_fitted():
             raise ValueError("Model not trained. Call train() first.")
-        
+
         base_predictions = {}
         
         for name, estimator in self.model.estimators_:
@@ -204,7 +212,7 @@ class StackedEnsembleModel:
     
     def get_model_info(self):
         """Get information about the model"""
-        if self.model is None:
+        if not self._is_fitted():
             return "Model not trained"
         
         info = {
