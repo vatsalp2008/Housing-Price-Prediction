@@ -91,7 +91,7 @@ RANDOM_FOREST_PARAMS = {
 
 # Meta-learner (Bayesian Ridge)
 BAYESIAN_RIDGE_PARAMS = {
-    'n_iter': 300,
+    'max_iter': 300,  # 'n_iter' was deprecated in scikit-learn 1.3, removed in 1.5
     'alpha_1': 1e-6,
     'alpha_2': 1e-6,
     'lambda_1': 1e-6,
