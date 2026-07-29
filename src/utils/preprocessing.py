@@ -78,7 +78,9 @@ class DataPreprocessor:
         outlier_mask = pd.Series([False] * len(df), index=df.index)
         
         for col in columns:
-            if col in df.columns and df[col].dtype in [np.float64, np.int64]:
+            # is_numeric_dtype covers int32/float32 and nullable dtypes, which an
+            # explicit [np.float64, np.int64] check silently skipped
+            if col in df.columns and pd.api.types.is_numeric_dtype(df[col]):
                 Q1 = df[col].quantile(0.25)
                 Q3 = df[col].quantile(0.75)
                 IQR = Q3 - Q1
