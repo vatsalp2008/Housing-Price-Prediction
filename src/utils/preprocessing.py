@@ -41,28 +41,29 @@ class DataPreprocessor:
         
         # Handle numeric missing values
         for col in numeric_cols:
-            if df[col].isnull().sum() > 0:
-                if fit:
-                    # Use median for numeric columns
-                    self.numeric_impute_values[col] = df[col].median()
-                
-                if col in self.numeric_impute_values:
-                    # Assign back rather than fillna(inplace=True): the latter
-                    # mutates a temporary and is a silent no-op under
-                    # copy-on-write (the pandas 3.0 default).
-                    df[col] = df[col].fillna(self.numeric_impute_values[col])
-        
+            if fit:
+                # Record a value for every column, not only those with gaps in
+                # the training frame: a column can be complete in train and
+                # still have missing values at inference time.
+                median = df[col].median()
+                self.numeric_impute_values[col] = 0.0 if pd.isna(median) else median
+
+            if col in self.numeric_impute_values and df[col].isnull().any():
+                # Assign back rather than fillna(inplace=True): the latter
+                # mutates a temporary and is a silent no-op under
+                # copy-on-write (the pandas 3.0 default).
+                df[col] = df[col].fillna(self.numeric_impute_values[col])
+
         # Handle categorical missing values
         for col in categorical_cols:
-            if df[col].isnull().sum() > 0:
-                if fit:
-                    # Use mode for categorical columns, or 'Missing' if no mode
-                    mode_values = df[col].mode()
-                    self.categorical_impute_values[col] = mode_values[0] if len(mode_values) > 0 else 'Missing'
-                
-                if col in self.categorical_impute_values:
-                    df[col] = df[col].fillna(self.categorical_impute_values[col])
-        
+            if fit:
+                # Use mode for categorical columns, or 'Missing' if no mode
+                mode_values = df[col].mode()
+                self.categorical_impute_values[col] = mode_values[0] if len(mode_values) > 0 else 'Missing'
+
+            if col in self.categorical_impute_values and df[col].isnull().any():
+                df[col] = df[col].fillna(self.categorical_impute_values[col])
+
         return df
     
     def detect_outliers_iqr(self, df: pd.DataFrame, columns: List[str], 
