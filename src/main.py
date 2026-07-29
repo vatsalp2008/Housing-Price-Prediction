@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 import joblib
 import json
+import pandas as pd
 
 # Add src to path
 sys.path.append(str(Path(__file__).parent))
@@ -248,6 +249,35 @@ class HousingValuationPipeline:
         logger.info("Validation complete")
         return residual_report, perm_report
     
+    def run_prediction(self):
+        """Load the saved model and write predictions for the held-out test set"""
+        logger.info("\n" + "=" * 80)
+        logger.info("PREDICTION")
+        logger.info("=" * 80)
+
+        self.model = StackedEnsembleModel()
+        self.model.load_model()
+
+        self.test_predictions = self.model.predict(self.X_test_transformed)
+
+        predictions_df = pd.DataFrame(
+            {'predicted_price': self.test_predictions},
+            index=self.X_test_transformed.index,
+        )
+
+        # Include actuals and error when the target is available
+        if self.y_test is not None:
+            predictions_df.insert(0, 'actual_price', self.y_test.values)
+            predictions_df['error'] = (
+                predictions_df['predicted_price'] - predictions_df['actual_price']
+            )
+
+        output_path = OUTPUT_DIR / 'predictions.csv'
+        predictions_df.to_csv(output_path, index_label='row_id')
+
+        logger.info(f"Wrote {len(predictions_df)} predictions to {output_path}")
+        return predictions_df
+
     def run_full_pipeline(self):
         """Execute complete pipeline"""
         logger.info("\n" + "#" * 80)
@@ -315,6 +345,15 @@ def main():
         pipeline.run_model_training()
         pipeline.run_evaluation()
         
+    elif args.mode == 'predict':
+        # Rebuild the same feature space, then score with the saved model.
+        # The split and feature engineering are deterministic given a fixed
+        # random_state, so this reproduces the training-time encodings.
+        pipeline.run_data_acquisition()
+        pipeline.run_preprocessing()
+        pipeline.run_feature_engineering()
+        pipeline.run_prediction()
+
     elif args.mode == 'explain':
         # Load existing model and explain
         logger.info("Loading existing model...")
