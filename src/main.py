@@ -91,15 +91,20 @@ class HousingValuationPipeline:
         logger.info("STEP 2: DATA PREPROCESSING")
         logger.info("=" * 80)
         
-        # Handle missing values
-        self.df = self.preprocessor.handle_missing_values(self.df, fit=True)
-        
-        # Remove extreme outliers
-        self.df = self.preprocessor.remove_extreme_outliers(self.df)
-        
-        # Split data
+        # Split first. Imputation statistics and outlier bounds must be learned
+        # from training data only - deriving them from the full dataset leaks
+        # test information into the model and inflates reported scores.
         self.train_df, self.test_df = self.preprocessor.stratified_split(self.df)
-        
+
+        # Fit imputation on train, then apply the stored values to test
+        self.train_df = self.preprocessor.handle_missing_values(self.train_df, fit=True)
+        self.test_df = self.preprocessor.handle_missing_values(self.test_df, fit=False)
+
+        # Drop extreme outliers from the training set only. Removing them from
+        # the test set would discard exactly the hard cases the model should be
+        # measured against.
+        self.train_df = self.preprocessor.remove_extreme_outliers(self.train_df)
+
         logger.info("Preprocessing complete")
         return self.train_df, self.test_df
     
