@@ -156,10 +156,12 @@ class StackedEnsembleModel:
             raise ValueError("Model not trained. Call train() first.")
 
         base_predictions = {}
-        
-        for name, estimator in self.model.estimators_:
+
+        # named_estimators_ maps name -> fitted estimator; estimators_ is an
+        # unnamed list, so it cannot be unpacked as (name, estimator) pairs.
+        for name, estimator in self.model.named_estimators_.items():
             base_predictions[name] = estimator.predict(X)
-        
+
         return base_predictions
     
     def save_model(self, filename: str = 'stacked_ensemble.pkl'):
@@ -216,7 +218,7 @@ class StackedEnsembleModel:
             return "Model not trained"
         
         info = {
-            'base_learners': [name for name, _ in self.model.estimators_],
+            'base_learners': list(self.model.named_estimators_),
             'meta_learner': type(self.model.final_estimator_).__name__,
             'n_features': len(self.feature_names) if self.feature_names else None,
         }
