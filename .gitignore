@@ -28,6 +28,8 @@ env/
 # Jupyter Notebook
 .ipynb_checkpoints
 *.ipynb
+# ...but the project's own notebooks should be versioned
+!notebooks/*.ipynb
 
 # Data files (keep structure, ignore large files)
 data/*.txt
