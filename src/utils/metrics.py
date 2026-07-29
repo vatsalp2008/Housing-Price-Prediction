@@ -4,8 +4,9 @@ Custom scoring functions and performance reporting
 """
 
 import numpy as np
-import pandas as pd
+from scipy import stats
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+from sklearn.model_selection import cross_val_score
 from typing import Dict, Tuple
 import logging
 
@@ -80,8 +81,6 @@ def calculate_prediction_intervals(y_pred: np.ndarray, residuals: np.ndarray,
     Returns:
         Tuple of (lower_bound, upper_bound)
     """
-    from scipy import stats
-    
     # Calculate standard error
     std_error = np.std(residuals)
     
@@ -109,8 +108,6 @@ def rmse_cv_score(model, X, y, cv=5):
     Returns:
         Mean RMSE across folds
     """
-    from sklearn.model_selection import cross_val_score
-    
     # Note: cross_val_score with neg_mean_squared_error returns negative values
     scores = cross_val_score(model, X, y, 
                             scoring='neg_mean_squared_error', 
