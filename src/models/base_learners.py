@@ -3,9 +3,11 @@ Base Learners for Stacked Ensemble
 Implements XGBoost, LightGBM, and Random Forest regressors
 """
 
+import numpy as np
 from xgboost import XGBRegressor
 from lightgbm import LGBMRegressor
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_squared_error, r2_score
 from typing import List, Tuple
 import logging
 import sys
@@ -14,7 +16,6 @@ from config import (
     XGBOOST_PARAMS,
     LIGHTGBM_PARAMS,
     RANDOM_FOREST_PARAMS,
-    MODEL_CONFIG
 )
 
 logger = logging.getLogger(__name__)
@@ -114,9 +115,6 @@ class BaseModelEvaluator:
             X_train, y_train: Training data
             X_test, y_test: Test data
         """
-        from sklearn.metrics import mean_squared_error, r2_score
-        import numpy as np
-        
         # Train model
         logger.info(f"Training {name}...")
         model.fit(X_train, y_train)
