@@ -23,14 +23,24 @@ def calculate_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> Dict[str, float
     Returns:
         Dictionary of metric names and values
     """
+    y_true = np.asarray(y_true, dtype=float)
+    y_pred = np.asarray(y_pred, dtype=float)
+
+    # MAPE is undefined where the true value is zero, so those rows are skipped
+    nonzero = y_true != 0
+    if nonzero.any():
+        mape = np.mean(np.abs((y_true[nonzero] - y_pred[nonzero]) / y_true[nonzero])) * 100
+    else:
+        mape = np.nan
+
     metrics = {
         'RMSE': np.sqrt(mean_squared_error(y_true, y_pred)),
         'MAE': mean_absolute_error(y_true, y_pred),
         'R2': r2_score(y_true, y_pred),
-        'MAPE': np.mean(np.abs((y_true - y_pred) / y_true)) * 100,  # Mean Absolute Percentage Error
+        'MAPE': mape,  # Mean Absolute Percentage Error
         'Max_Error': np.max(np.abs(y_true - y_pred)),
     }
-    
+
     return metrics
 
 
