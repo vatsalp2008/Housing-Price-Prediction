@@ -120,49 +120,75 @@ class TargetEncoder(BaseEstimator, TransformerMixin):
 class BoxCoxTransformer(BaseEstimator, TransformerMixin):
     """Apply Box-Cox transformation to skewed features"""
     
-    def __init__(self, skewness_threshold: float = 0.75):
+    def __init__(self, skewness_threshold: float = 0.75, lmbda: float = 0.15):
         """
         Args:
             skewness_threshold: Minimum skewness to apply transformation
+            lmbda: Box-Cox lambda (0.15 is a common choice for right-skewed data)
         """
         self.skewness_threshold = skewness_threshold
+        self.lmbda = lmbda
         self.skewed_features = []
-        self.lambda_values = {}
-        
+
     def fit(self, X, y=None):
         """
         Identify skewed features
-        
+
         Args:
             X: Feature DataFrame
         """
         X = X.copy()
-        
+
         # Only consider numeric columns
         numeric_features = X.select_dtypes(include=[np.number]).columns
-        
+
         # Calculate skewness for each feature
         skewness = X[numeric_features].apply(lambda x: stats.skew(x.dropna()))
-        
+
         # Identify features with high skewness
-        self.skewed_features = skewness[abs(skewness) > self.skewness_threshold].index.tolist()
-        
+        candidates = skewness[abs(skewness) > self.skewness_threshold].index.tolist()
+
+        # boxcox1p raises (1 + x) to a fractional power, which is undefined for
+        # x < -1. Such features would become all-NaN, so exclude them here
+        # rather than feeding NaN columns to the model.
+        self.skewed_features = []
+        for feature in candidates:
+            if X[feature].min() <= -1:
+                logger.warning(
+                    f"Skipping Box-Cox for '{feature}': contains values <= -1, "
+                    f"which are outside the transform's domain"
+                )
+            else:
+                self.skewed_features.append(feature)
+
         logger.info(f"Identified {len(self.skewed_features)} skewed features for Box-Cox transformation")
-        
+
         return self
-    
+
     def transform(self, X):
         """Apply Box-Cox transformation to skewed features"""
         X = X.copy()
-        
+
         for feature in self.skewed_features:
             if feature in X.columns:
                 # Box-Cox requires positive values, add 1 to handle zeros
                 # Using boxcox1p which is equivalent to boxcox(x + 1)
-                X[feature] = boxcox1p(X[feature], 0.15)  # lambda=0.15 is a common choice
-                
+                column = X[feature]
+
+                # Unseen data may still fall outside the domain; clip instead of
+                # letting NaN propagate silently into the model
+                if column.min() <= -1:
+                    n_clipped = int((column <= -1).sum())
+                    logger.warning(
+                        f"Clipping {n_clipped} out-of-domain value(s) in '{feature}' "
+                        f"before Box-Cox transformation"
+                    )
+                    column = column.clip(lower=-1 + 1e-9)
+
+                X[feature] = boxcox1p(column, self.lmbda)
+
                 logger.debug(f"Applied Box-Cox to '{feature}'")
-        
+
         return X
 
 
