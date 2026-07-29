@@ -4,20 +4,36 @@
 
 ### Test Set Metrics
 
+Measured on a 586-row held-out test set (2,326 training rows) using **default
+hyperparameters**, i.e. without `--optimize`:
+
 | Metric | Value | Target | Status |
 |--------|-------|--------|--------|
-| **R² Score** | 0.87 | > 0.85 | ✅ Exceeds |
-| **RMSE** | $23,450 | < $25,000 | ✅ Meets |
-| **MAE** | $16,200 | N/A | ℹ️ Reference |
-| **MAPE** | 8.9% | N/A | ℹ️ Reference |
+| **R² Score** | 0.902 | > 0.85 | ✅ Exceeds |
+| **RMSE** | $26,041 | < $25,000 | ⚠️ Misses by ~$1,000 |
+| **MAE** | $14,320 | N/A | ℹ️ Reference |
+| **MAPE** | 7.9% | N/A | ℹ️ Reference |
+
+Hyperparameter optimization is not included in these figures and is the
+expected route to bringing RMSE under the $25,000 target.
 
 ### Model Generalization
 
-- **Training R²**: 0.92
-- **Test R²**: 0.87
-- **Generalization Gap**: 0.05 (excellent - indicates minimal overfitting)
+- **Training R²**: 0.999
+- **Test R²**: 0.902
+- **Generalization Gap**: 0.097
 
-The model demonstrates strong predictive performance with good generalization to unseen data. The small gap between training and test performance indicates the ensemble and regularization strategies are working effectively.
+The ensemble fits the training set almost perfectly, so the gap is driven by
+training-set memorization rather than weak test performance. It sits just under
+the 0.10 threshold at which the pipeline emits an overfitting warning, and
+reducing base learner capacity is worth investigating.
+
+> **Note on earlier figures.** Previous versions of this document reported
+> R² 0.87 and RMSE $23,450. Those were produced by a pipeline that imputed
+> missing values and removed outliers *before* the train/test split, which
+> leaked test information into training and deleted the hardest test cases.
+> With that leakage removed, measured test RMSE rose from $19,558 to $26,041 on
+> an identical configuration. The numbers above are the honest ones.
 
 ## Top 10 Price Drivers
 
@@ -171,10 +187,11 @@ For individual predictions, LIME provides:
 
 The Housing Valuation Engine successfully delivers on all key objectives:
 
-✅ **Accuracy**: Exceeds R² target (0.87 vs. 0.85) with low RMSE ($23,450)  
+✅ **Accuracy**: Exceeds R² target (0.902 vs. 0.85)  
+⚠️ **RMSE**: $26,041 against a < $25,000 target, before hyperparameter tuning  
 ✅ **Interpretability**: SHAP and LIME provide transparent, actionable insights  
 ✅ **Robustness**: Passes homoscedasticity and normality tests  
-✅ **Generalization**: Minimal overfitting (5% train-test gap)  
+⚠️ **Generalization**: 0.097 train-test R² gap, just inside the warning threshold  
 ✅ **Production-Ready**: Modular architecture, comprehensive logging, model persistence
 
 The model is ready for deployment in real-world valuation scenarios, with clear documentation for stakeholders at all technical levels.
