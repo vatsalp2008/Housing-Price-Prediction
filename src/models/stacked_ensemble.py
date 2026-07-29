@@ -4,12 +4,10 @@ Implements stacking with Bayesian Ridge meta-learner
 """
 
 import numpy as np
-import pandas as pd
 from sklearn.ensemble import StackingRegressor
 from sklearn.linear_model import BayesianRidge
 from sklearn.model_selection import cross_val_score
 import joblib
-from pathlib import Path
 import logging
 import sys
 sys.path.append('..')
