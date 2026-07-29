@@ -179,6 +179,7 @@ class FeatureEngineeringPipeline:
         self.target_encoder = TargetEncoder()
         self.boxcox_transformer = BoxCoxTransformer()
         self.label_encoders = {}
+        self.fallback_categories = {}
         self.feature_names = None
         
     def _encode_categorical(self, X: pd.DataFrame, fit: bool = True) -> pd.DataFrame:
@@ -199,16 +200,22 @@ class FeatureEngineeringPipeline:
         for col in categorical_cols:
             if fit:
                 self.label_encoders[col] = LabelEncoder()
-                X[col] = self.label_encoders[col].fit_transform(X[col].astype(str))
+                values = X[col].astype(str)
+                X[col] = self.label_encoders[col].fit_transform(values)
+                # LabelEncoder sorts classes alphabetically, so remember the
+                # actual modal category for the unseen-category fallback below
+                self.fallback_categories[col] = values.mode()[0]
             else:
                 if col in self.label_encoders:
                     # Handle unseen categories
                     X[col] = X[col].astype(str)
                     # Get known classes
                     known_classes = set(self.label_encoders[col].classes_)
-                    # Replace unseen with most frequent class
-                    most_frequent = self.label_encoders[col].classes_[0]
-                    X[col] = X[col].apply(lambda x: x if x in known_classes else most_frequent)
+                    # Replace unseen categories with the most frequent training category
+                    fallback = self.fallback_categories.get(
+                        col, self.label_encoders[col].classes_[0]
+                    )
+                    X[col] = X[col].apply(lambda x: x if x in known_classes else fallback)
                     X[col] = self.label_encoders[col].transform(X[col])
         
         return X
