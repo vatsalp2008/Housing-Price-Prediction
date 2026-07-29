@@ -52,6 +52,15 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
+### Running the Tests
+
+```bash
+pytest tests/
+```
+
+The suite covers the metrics helpers, preprocessing and feature engineering.
+It needs no dataset download and runs in about a second.
+
 ### Basic Usage
 
 #### 1. Run Complete Pipeline (Training + Evaluation + Explainability)
@@ -77,6 +86,15 @@ python src/main.py --mode full --quick
 ```bash
 python src/main.py --mode explain
 ```
+
+#### 5. Score the Held-Out Test Set with a Saved Model
+
+```bash
+python src/main.py --mode predict
+```
+
+Writes `outputs/predictions.csv` with actual price, predicted price and error
+per row.
 
 ## 📁 Project Structure
 
