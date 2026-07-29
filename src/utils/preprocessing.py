@@ -44,7 +44,10 @@ class DataPreprocessor:
                     self.numeric_impute_values[col] = df[col].median()
                 
                 if col in self.numeric_impute_values:
-                    df[col].fillna(self.numeric_impute_values[col], inplace=True)
+                    # Assign back rather than fillna(inplace=True): the latter
+                    # mutates a temporary and is a silent no-op under
+                    # copy-on-write (the pandas 3.0 default).
+                    df[col] = df[col].fillna(self.numeric_impute_values[col])
         
         # Handle categorical missing values
         for col in categorical_cols:
@@ -55,7 +58,7 @@ class DataPreprocessor:
                     self.categorical_impute_values[col] = mode_values[0] if len(mode_values) > 0 else 'Missing'
                 
                 if col in self.categorical_impute_values:
-                    df[col].fillna(self.categorical_impute_values[col], inplace=True)
+                    df[col] = df[col].fillna(self.categorical_impute_values[col])
         
         return df
     
