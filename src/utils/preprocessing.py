@@ -8,6 +8,9 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from typing import Tuple, List
 import logging
+import sys
+sys.path.append('..')
+from config import MODEL_CONFIG
 
 logger = logging.getLogger(__name__)
 
@@ -121,20 +124,26 @@ class DataPreprocessor:
         return df
     
     def stratified_split(self, df: pd.DataFrame, target_col: str = 'SalePrice',
-                        test_size: float = 0.2, random_state: int = 42) -> Tuple[pd.DataFrame, pd.DataFrame]:
+                        test_size: float = None, random_state: int = None) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """
         Perform stratified train-test split based on target variable bins
-        
+
         Args:
             df: Input DataFrame
             target_col: Target variable column name
-            test_size: Proportion of test set
-            random_state: Random seed for reproducibility
-            
+            test_size: Proportion of test set (defaults to MODEL_CONFIG)
+            random_state: Random seed for reproducibility (defaults to MODEL_CONFIG)
+
         Returns:
             Tuple of (train_df, test_df)
         """
         df = df.copy()
+
+        # Fall back to the central config so changing it actually takes effect
+        if test_size is None:
+            test_size = MODEL_CONFIG['test_size']
+        if random_state is None:
+            random_state = MODEL_CONFIG['random_state']
         
         # Create bins for stratification
         df['price_bin'] = pd.qcut(df[target_col], q=5, labels=False, duplicates='drop')
