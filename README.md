@@ -221,11 +221,15 @@ Edit `src/config.py` to customize:
 
 ## 📚 Notebooks
 
-Explore the `notebooks/` directory for interactive analysis:
+The `notebooks/` directory holds placeholders for interactive analysis. These
+are not written yet — the equivalent functionality is available today through
+the CLI documented above.
 
-1. **01_exploratory_analysis.ipynb**: Dataset overview and visualizations
-2. **02_model_training.ipynb**: Step-by-step training process
-3. **03_explainability_demo.ipynb**: SHAP and LIME demonstrations
+| Notebook | Planned content | Status |
+|----------|-----------------|--------|
+| `01_exploratory_analysis.ipynb` | Dataset overview and visualizations | Not written |
+| `02_model_training.ipynb` | Step-by-step training process | Not written |
+| `03_explainability_demo.ipynb` | SHAP and LIME demonstrations | Not written |
 
 ## 🤝 Contributing
 
