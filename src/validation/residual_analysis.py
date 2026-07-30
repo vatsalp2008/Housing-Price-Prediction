@@ -13,7 +13,7 @@ from statsmodels.stats.diagnostic import het_breuschpagan
 import logging
 import sys
 sys.path.append('..')
-from config import OUTPUT_DIR
+from config import OUTPUT_DIR, MODEL_CONFIG
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,15 @@ class ResidualAnalyzer:
         
     def calculate_standardized_residuals(self):
         """Calculate standardized residuals"""
-        std_residuals = self.residuals / np.std(self.residuals)
+        spread = np.std(self.residuals)
+
+        # Perfect predictions give a zero spread; dividing would yield nan/inf
+        if spread == 0:
+            logger.warning("Residuals have zero spread; standardized residuals are all zero")
+            std_residuals = np.zeros_like(self.residuals, dtype=float)
+        else:
+            std_residuals = self.residuals / spread
+
         self.standardized_residuals = std_residuals
         return std_residuals
     
@@ -227,18 +235,27 @@ class ResidualAnalyzer:
         
         return results
     
-    def shapiro_wilk_test(self):
+    def shapiro_wilk_test(self, random_state: int = None):
         """
         Shapiro-Wilk test for normality of residuals
-        
+
+        Args:
+            random_state: Seed for the subsample drawn when there are more than
+                5000 residuals (defaults to MODEL_CONFIG)
+
         Returns:
             Test results dictionary
         """
         logger.info("Performing Shapiro-Wilk test for normality...")
-        
-        # Use sample if dataset is too large (Shapiro-Wilk has limitations)
+
+        if random_state is None:
+            random_state = MODEL_CONFIG['random_state']
+
+        # Use sample if dataset is too large (Shapiro-Wilk has limitations).
+        # The draw is seeded so repeated runs report the same p-value.
         if len(self.residuals) > 5000:
-            sample_residuals = np.random.choice(self.residuals, 5000, replace=False)
+            rng = np.random.default_rng(random_state)
+            sample_residuals = rng.choice(self.residuals, 5000, replace=False)
         else:
             sample_residuals = self.residuals
         
