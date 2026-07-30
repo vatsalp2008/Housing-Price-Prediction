@@ -106,12 +106,16 @@ def run_quick_test():
         # Preprocess
         print("\n2. Preprocessing...")
         preprocessor = DataPreprocessor()
-        df = preprocessor.handle_missing_values(df)
-        df = preprocessor.remove_extreme_outliers(df)
-        
-        # Use small subset for quick test
+
+        # Use small subset for quick check
         df_sample = df.sample(n=min(500, len(df)), random_state=42)
+
+        # Same ordering as the real pipeline: split first, fit the imputer on
+        # train only, and drop outliers from the training set alone
         train_df, test_df = preprocessor.stratified_split(df_sample)
+        train_df = preprocessor.handle_missing_values(train_df, fit=True)
+        test_df = preprocessor.handle_missing_values(test_df, fit=False)
+        train_df = preprocessor.remove_extreme_outliers(train_df)
         print(f"   Train: {len(train_df)}, Test: {len(test_df)}")
         
         # Feature engineering
