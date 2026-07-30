@@ -2,6 +2,7 @@
 Quick test script to verify installation and run a minimal pipeline
 """
 
+import argparse
 import sys
 from pathlib import Path
 
@@ -150,34 +151,60 @@ def run_quick_test():
         return False
 
 
-def main():
-    """Run all tests"""
+def main(argv=None):
+    """Run all checks"""
+    parser = argparse.ArgumentParser(
+        description='Verify the installation and optionally run a minimal pipeline'
+    )
+    parser.add_argument('--run-pipeline', action='store_true',
+                        help='Run the end-to-end pipeline check without prompting')
+    parser.add_argument('--checks-only', action='store_true',
+                        help='Run only the import and structure checks')
+    args = parser.parse_args(argv)
+
     print("=" * 60)
-    print("HOUSING VALUATION ENGINE - INSTALLATION TEST")
+    print("HOUSING VALUATION ENGINE - INSTALLATION CHECK")
     print("=" * 60)
-    
-    # Run tests
+
+    # Run checks
     imports_ok = test_imports()
     structure_ok = test_project_structure()
     modules_ok = test_module_imports()
-    
+
     if not (imports_ok and structure_ok and modules_ok):
         print("\n" + "=" * 60)
-        print("✗ TESTS FAILED")
+        print("✗ CHECKS FAILED")
         print("=" * 60)
         print("\nPlease fix the issues above before proceeding.")
         return False
-    
-    # Run quick pipeline test
-    print("\n" + "=" * 60)
-    user_input = input("Run quick end-to-end test? (y/n): ")
-    if user_input.lower() == 'y':
-        test_ok = run_quick_test()
-        return test_ok
-    else:
-        print("\nSkipping end-to-end test.")
-        print("Run manually with: python test_installation.py")
+
+    if args.checks_only:
+        print("\nSkipping end-to-end check (--checks-only).")
         return True
+
+    if args.run_pipeline:
+        return run_quick_test()
+
+    # Only prompt when there is a terminal to prompt at: piping this script or
+    # running it in CI used to raise EOFError here.
+    print("\n" + "=" * 60)
+    if not sys.stdin.isatty():
+        print("Non-interactive session; skipping end-to-end check.")
+        print("Run it with: python verify_installation.py --run-pipeline")
+        return True
+
+    try:
+        user_input = input("Run quick end-to-end check? (y/n): ")
+    except EOFError:
+        print("\nNo input available; skipping end-to-end check.")
+        return True
+
+    if user_input.strip().lower() in ('y', 'yes'):
+        return run_quick_test()
+
+    print("\nSkipping end-to-end check.")
+    print("Run it with: python verify_installation.py --run-pipeline")
+    return True
 
 
 if __name__ == "__main__":
