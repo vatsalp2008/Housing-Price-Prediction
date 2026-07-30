@@ -46,7 +46,9 @@ class PermutationImportanceAnalyzer:
         Returns:
             Permutation importance results
         """
-        random_state = random_state or MODEL_CONFIG['random_state']
+        # `or` would treat an explicit random_state=0 as unset
+        if random_state is None:
+            random_state = MODEL_CONFIG['random_state']
         
         logger.info("=" * 70)
         logger.info("CALCULATING PERMUTATION IMPORTANCE")
