@@ -292,6 +292,7 @@ class FeatureEngineeringPipeline:
         self.label_encoders = {}
         self.fallback_categories = {}
         self.feature_names = None
+        self.constant_features = []
         
     def _encode_categorical(self, X: pd.DataFrame, fit: bool = True) -> pd.DataFrame:
         """
@@ -366,9 +367,18 @@ class FeatureEngineeringPipeline:
         
         # Store feature names
         self.feature_names = X.columns.tolist()
-        
+
+        # Zero-variance columns carry no signal and can silently prop up
+        # diagnostics that need a constant term, so surface them explicitly
+        self.constant_features = [col for col in X.columns if X[col].nunique(dropna=False) <= 1]
+        if self.constant_features:
+            logger.warning(
+                f"{len(self.constant_features)} feature(s) have a single distinct value "
+                f"and cannot contribute to any model: {self.constant_features}"
+            )
+
         logger.info(f"Feature engineering complete. Final feature count: {len(self.feature_names)}")
-        
+
         return X
     
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
