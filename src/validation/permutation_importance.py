@@ -142,6 +142,25 @@ class PermutationImportanceAnalyzer:
         
         return save_path
     
+    @staticmethod
+    def _normalize(values: pd.Series) -> pd.Series:
+        """
+        Scale a series to [0, 1] for cross-method comparison
+
+        Args:
+            values: Importance scores
+
+        Returns:
+            Scaled scores, all zero when every score is identical
+        """
+        spread = values.max() - values.min()
+
+        # A flat series would divide by zero and yield all-NaN bars
+        if spread == 0:
+            return pd.Series(0.0, index=values.index)
+
+        return (values - values.min()) / spread
+
     def compare_with_shap(self, shap_importance_df, top_n=15, save_path=None):
         """
         Compare permutation importance with SHAP importance
@@ -160,9 +179,9 @@ class PermutationImportanceAnalyzer:
         perm_df = self.get_importance_dataframe()
         
         # Normalize both importance scores to [0, 1] for comparison
-        perm_df['importance_normalized'] = (perm_df['importance_mean'] - perm_df['importance_mean'].min()) / (perm_df['importance_mean'].max() - perm_df['importance_mean'].min())
         shap_df = shap_importance_df.copy()
-        shap_df['importance_normalized'] = (shap_df['importance'] - shap_df['importance'].min()) / (shap_df['importance'].max() - shap_df['importance'].min())
+        perm_df['importance_normalized'] = self._normalize(perm_df['importance_mean'])
+        shap_df['importance_normalized'] = self._normalize(shap_df['importance'])
         
         # Get top features from both methods
         top_perm_features = set(perm_df.head(top_n)['feature'])
