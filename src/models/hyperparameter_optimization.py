@@ -24,21 +24,60 @@ optuna.logging.set_verbosity(optuna.logging.WARNING)
 class OptunaOptimizer:
     """Hyperparameter optimization using Optuna"""
     
-    def __init__(self, n_trials: int = None, quick_mode: bool = False):
+    def __init__(self, n_trials: int = None, quick_mode: bool = False,
+                 timeout: int = None):
         """
         Initialize optimizer
-        
+
         Args:
-            n_trials: Number of optimization trials
+            n_trials: Number of optimization trials. Wins over quick_mode when
+                given explicitly.
             quick_mode: Use reduced trials for quick testing
+            timeout: Per-study wall-clock budget in seconds (defaults to
+                OPTUNA_CONFIG)
         """
-        if quick_mode:
+        if n_trials is not None:
+            self.n_trials = n_trials
+        elif quick_mode:
             self.n_trials = OPTUNA_CONFIG['n_trials_quick']
         else:
-            self.n_trials = n_trials or OPTUNA_CONFIG['n_trials']
-        
+            self.n_trials = OPTUNA_CONFIG['n_trials']
+
+        self.timeout = timeout if timeout is not None else OPTUNA_CONFIG['timeout']
+
         self.best_params = {}
         self.studies = {}
+
+    def _run_study(self, name: str, objective, X, y):
+        """
+        Create and run a study for one base learner
+
+        Args:
+            name: Model name used for logging and result keys
+            objective: Objective callable taking (trial, X, y)
+            X: Features
+            y: Target
+
+        Returns:
+            The completed study
+        """
+        study = optuna.create_study(
+            direction='minimize',
+            sampler=TPESampler(seed=MODEL_CONFIG['random_state'])
+        )
+
+        study.optimize(
+            lambda trial: objective(trial, X, y),
+            n_trials=self.n_trials,
+            timeout=self.timeout,
+            show_progress_bar=True
+        )
+
+        logger.info(f"Best RMSE: ${study.best_value:,.2f}")
+        logger.info(f"Best parameters: {study.best_params}")
+        logger.info(f"Trials completed: {len(study.trials)}")
+
+        return study
         
     def _objective_xgboost(self, trial, X, y):
         """
@@ -167,25 +206,13 @@ class OptunaOptimizer:
         logger.info("=" * 70)
         logger.info("OPTIMIZING XGBOOST HYPERPARAMETERS")
         logger.info("=" * 70)
-        logger.info(f"Trials: {self.n_trials}")
-        
-        study = optuna.create_study(
-            direction='minimize',
-            sampler=TPESampler(seed=MODEL_CONFIG['random_state'])
-        )
-        
-        study.optimize(
-            lambda trial: self._objective_xgboost(trial, X, y),
-            n_trials=self.n_trials,
-            show_progress_bar=True
-        )
-        
+        logger.info(f"Trials: {self.n_trials}, timeout: {self.timeout}s")
+
+        study = self._run_study('xgboost', self._objective_xgboost, X, y)
+
         self.studies['xgboost'] = study
         self.best_params['xgboost'] = study.best_params
-        
-        logger.info(f"Best RMSE: ${study.best_value:,.2f}")
-        logger.info(f"Best parameters: {study.best_params}")
-        
+
         return study.best_params
     
     def optimize_lightgbm(self, X, y):
@@ -202,25 +229,13 @@ class OptunaOptimizer:
         logger.info("=" * 70)
         logger.info("OPTIMIZING LIGHTGBM HYPERPARAMETERS")
         logger.info("=" * 70)
-        logger.info(f"Trials: {self.n_trials}")
-        
-        study = optuna.create_study(
-            direction='minimize',
-            sampler=TPESampler(seed=MODEL_CONFIG['random_state'])
-        )
-        
-        study.optimize(
-            lambda trial: self._objective_lightgbm(trial, X, y),
-            n_trials=self.n_trials,
-            show_progress_bar=True
-        )
-        
+        logger.info(f"Trials: {self.n_trials}, timeout: {self.timeout}s")
+
+        study = self._run_study('lightgbm', self._objective_lightgbm, X, y)
+
         self.studies['lightgbm'] = study
         self.best_params['lightgbm'] = study.best_params
-        
-        logger.info(f"Best RMSE: ${study.best_value:,.2f}")
-        logger.info(f"Best parameters: {study.best_params}")
-        
+
         return study.best_params
     
     def optimize_random_forest(self, X, y):
@@ -237,25 +252,13 @@ class OptunaOptimizer:
         logger.info("=" * 70)
         logger.info("OPTIMIZING RANDOM FOREST HYPERPARAMETERS")
         logger.info("=" * 70)
-        logger.info(f"Trials: {self.n_trials}")
-        
-        study = optuna.create_study(
-            direction='minimize',
-            sampler=TPESampler(seed=MODEL_CONFIG['random_state'])
-        )
-        
-        study.optimize(
-            lambda trial: self._objective_random_forest(trial, X, y),
-            n_trials=self.n_trials,
-            show_progress_bar=True
-        )
-        
+        logger.info(f"Trials: {self.n_trials}, timeout: {self.timeout}s")
+
+        study = self._run_study('random_forest', self._objective_random_forest, X, y)
+
         self.studies['random_forest'] = study
         self.best_params['rf'] = study.best_params  # Note: using 'rf' key for consistency
-        
-        logger.info(f"Best RMSE: ${study.best_value:,.2f}")
-        logger.info(f"Best parameters: {study.best_params}")
-        
+
         return study.best_params
     
     def optimize_all(self, X, y):
