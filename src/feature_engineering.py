@@ -25,7 +25,11 @@ class InteractionFeatureGenerator(BaseEstimator, TransformerMixin):
         Args:
             interaction_pairs: List of tuples specifying feature pairs to interact
         """
-        self.interaction_pairs = interaction_pairs or FEATURE_CONFIG['interaction_terms']
+        # `or` would treat an empty list as unset, making it impossible to ask
+        # for no interaction terms at all
+        if interaction_pairs is None:
+            interaction_pairs = FEATURE_CONFIG['interaction_terms']
+        self.interaction_pairs = interaction_pairs
         
     def fit(self, X, y=None):
         """Fit method (no fitting required for interactions)"""
@@ -67,7 +71,10 @@ class TargetEncoder(BaseEstimator, TransformerMixin):
             n_splits: Folds used to build out-of-fold training encodings
             random_state: Seed for fold assignment (defaults to MODEL_CONFIG)
         """
-        self.columns = columns or FEATURE_CONFIG['high_cardinality_cols']
+        # As above: an empty list means "encode nothing", not "use the default"
+        if columns is None:
+            columns = FEATURE_CONFIG['high_cardinality_cols']
+        self.columns = columns
         self.smoothing = smoothing
         self.n_splits = n_splits
         self.random_state = random_state if random_state is not None else MODEL_CONFIG['random_state']
