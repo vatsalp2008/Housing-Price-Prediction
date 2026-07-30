@@ -8,6 +8,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy import stats
+import statsmodels.api as sm
 from statsmodels.stats.diagnostic import het_breuschpagan
 import logging
 import sys
@@ -196,9 +197,15 @@ class ResidualAnalyzer:
             Test results dictionary
         """
         logger.info("Performing Breusch-Pagan test for homoscedasticity...")
-        
-        # Breusch-Pagan test
-        bp_test = het_breuschpagan(self.residuals, X)
+
+        # statsmodels requires the auxiliary regression's design matrix to
+        # contain an intercept and raises ValueError without one. Passing the
+        # raw feature matrix only worked when it happened to carry a constant
+        # column. add_constant defaults to has_constant='skip', so this is a
+        # no-op when one is already present.
+        exog = sm.add_constant(np.asarray(X, dtype=float))
+
+        bp_test = het_breuschpagan(self.residuals, exog)
         
         results = {
             'lm_statistic': bp_test[0],
