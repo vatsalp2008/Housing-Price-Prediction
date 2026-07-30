@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy import stats
 import statsmodels.api as sm
+from statsmodels.nonparametric.smoothers_lowess import lowess
 from statsmodels.stats.diagnostic import het_breuschpagan
 import logging
 import sys
@@ -66,7 +67,6 @@ class ResidualAnalyzer:
         ax.axhline(y=0, color='r', linestyle='--', linewidth=2)
         
         # Add lowess smoothing line
-        from statsmodels.nonparametric.smoothers_lowess import lowess
         smoothed = lowess(self.residuals, self.y_pred, frac=0.3)
         ax.plot(smoothed[:, 0], smoothed[:, 1], 'b-', linewidth=2, label='LOWESS')
         
@@ -172,7 +172,6 @@ class ResidualAnalyzer:
         ax.scatter(self.y_pred, sqrt_std_residuals, alpha=0.5, edgecolors='k', linewidths=0.5)
         
         # Add lowess smoothing
-        from statsmodels.nonparametric.smoothers_lowess import lowess
         smoothed = lowess(sqrt_std_residuals, self.y_pred, frac=0.3)
         ax.plot(smoothed[:, 0], smoothed[:, 1], 'r-', linewidth=2, label='LOWESS')
         
