@@ -115,6 +115,11 @@ class DataAcquisition:
         df['CPI'] = MACRO_INDICATORS['cpi']
         
         # Calculate years since sale (for market adjustment)
+        if 'Yr Sold' not in df.columns:
+            raise KeyError(
+                "Column 'Yr Sold' is required to derive Years_Since_Sale. "
+                f"Available columns: {sorted(df.columns)[:10]}..."
+            )
         df['Years_Since_Sale'] = MACRO_INDICATORS['reference_year'] - df['Yr Sold']
         
         # Create market adjustment factor
