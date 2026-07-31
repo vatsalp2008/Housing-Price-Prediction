@@ -279,17 +279,38 @@ class SHAPAnalyzer:
         
         logger.info(f"Creating SHAP force plot for sample {sample_idx}")
         
-        # Get expected value (base value)
-        if hasattr(self.explainer, 'expected_value'):
-            expected_value = self.explainer.expected_value
-        else:
-            expected_value = np.mean(shap_values)
+        # Get expected value (base value). A force plot needs the model's
+        # baseline output; the mean of the SHAP values is a different quantity
+        # entirely (it is near zero by construction) and would shift every bar.
+        expected_value = getattr(self.explainer, 'expected_value', None)
+
+        if expected_value is None:
+            if self.X_background is None:
+                raise ValueError(
+                    "Explainer exposes no expected_value and no X_background is "
+                    "available to estimate the model's baseline output"
+                )
+            expected_value = float(np.mean(self.model.predict(self.X_background)))
+            logger.warning(
+                "Explainer has no expected_value; using the mean prediction over "
+                "the background set as the base value"
+            )
         
+        # Resolve the row to explain from whichever dataset is available
+        plot_data = self._resolve_plot_data(X, shap_values)
+        if plot_data is None:
+            raise ValueError("No dataset available to read the sample's features from")
+
+        instance = (
+            plot_data.iloc[sample_idx] if isinstance(plot_data, pd.DataFrame)
+            else plot_data[sample_idx]
+        )
+
         # Create force plot
         force_plot = shap.force_plot(
             expected_value,
             shap_values[sample_idx],
-            X.iloc[sample_idx] if isinstance(X, pd.DataFrame) else X[sample_idx],
+            instance,
             feature_names=self.feature_names,
             matplotlib=True,
             show=False
