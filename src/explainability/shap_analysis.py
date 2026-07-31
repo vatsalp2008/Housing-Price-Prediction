@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import logging
 import sys
 sys.path.append('..')
-from config import SHAP_CONFIG, OUTPUT_DIR
+from config import SHAP_CONFIG, OUTPUT_DIR, MODEL_CONFIG
 
 logger = logging.getLogger(__name__)
 
@@ -79,7 +79,10 @@ class SHAPAnalyzer:
         # Limit samples for computational efficiency
         if max_samples and len(X) > max_samples:
             logger.info(f"Using {max_samples} samples for SHAP calculation")
-            X_sample = X.sample(n=max_samples, random_state=42) if isinstance(X, pd.DataFrame) else X[:max_samples]
+            X_sample = (
+                X.sample(n=max_samples, random_state=MODEL_CONFIG['random_state'])
+                if isinstance(X, pd.DataFrame) else X[:max_samples]
+            )
         else:
             X_sample = X
         
@@ -143,7 +146,8 @@ class SHAPAnalyzer:
                 self.calculate_shap_values(X)
             shap_values = self.shap_values
         
-        max_display = max_display or SHAP_CONFIG['max_display']
+        if max_display is None:
+            max_display = SHAP_CONFIG['max_display']
         
         logger.info("Creating SHAP summary plot...")
         
@@ -186,7 +190,8 @@ class SHAPAnalyzer:
                 self.calculate_shap_values(X)
             shap_values = self.shap_values
         
-        max_display = max_display or SHAP_CONFIG['max_display']
+        if max_display is None:
+            max_display = SHAP_CONFIG['max_display']
         
         logger.info("Creating SHAP bar plot...")
         
