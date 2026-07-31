@@ -45,8 +45,12 @@ class DataPreprocessor:
                 # Record a value for every column, not only those with gaps in
                 # the training frame: a column can be complete in train and
                 # still have missing values at inference time.
-                median = df[col].median()
-                self.numeric_impute_values[col] = 0.0 if pd.isna(median) else median
+                if df[col].notna().any():
+                    self.numeric_impute_values[col] = df[col].median()
+                else:
+                    # An all-NaN column has no median; pandas would warn about
+                    # taking the mean of an empty slice
+                    self.numeric_impute_values[col] = 0.0
 
             if col in self.numeric_impute_values and df[col].isnull().any():
                 # Assign back rather than fillna(inplace=True): the latter
