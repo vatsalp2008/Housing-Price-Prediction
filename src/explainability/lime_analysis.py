@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import logging
 import sys
 sys.path.append('..')
-from config import LIME_CONFIG, OUTPUT_DIR
+from config import LIME_CONFIG, OUTPUT_DIR, MODEL_CONFIG
 
 logger = logging.getLogger(__name__)
 
@@ -19,20 +19,26 @@ logger = logging.getLogger(__name__)
 class LIMEAnalyzer:
     """LIME-based local explanations for individual predictions"""
     
-    def __init__(self, model, X_train, feature_names=None, class_names=None):
+    def __init__(self, model, X_train, feature_names=None, class_names=None,
+                 random_state=None):
         """
         Initialize LIME analyzer
-        
+
         Args:
             model: Trained model
             X_train: Training data for LIME explainer
             feature_names: List of feature names
             class_names: Class names (for classification, None for regression)
+            random_state: Seed for LIME's perturbation sampling (defaults to
+                MODEL_CONFIG)
         """
         self.model = model
         self.X_train = X_train
         self.feature_names = feature_names
         self.class_names = class_names
+        self.random_state = (
+            random_state if random_state is not None else MODEL_CONFIG['random_state']
+        )
         self.explainer = None
         
     def create_explainer(self):
@@ -42,12 +48,15 @@ class LIMEAnalyzer:
         # Convert to numpy if DataFrame
         X_train_array = self.X_train.values if isinstance(self.X_train, pd.DataFrame) else self.X_train
         
+        # LIME perturbs the instance randomly; without a seed the same instance
+        # yields different explanations on every run
         self.explainer = lime.lime_tabular.LimeTabularExplainer(
             X_train_array,
             feature_names=self.feature_names,
             class_names=self.class_names,
             mode='regression',  # Use 'classification' for classification tasks
-            verbose=False
+            verbose=False,
+            random_state=self.random_state
         )
         
         logger.info("LIME explainer created successfully")
