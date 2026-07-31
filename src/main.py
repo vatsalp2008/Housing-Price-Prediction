@@ -14,7 +14,7 @@ import pandas as pd
 # Add src to path
 sys.path.append(str(Path(__file__).parent))
 
-from config import OUTPUT_DIR, MODELS_DIR
+from config import OUTPUT_DIR, MODELS_DIR, MODEL_CONFIG, SHAP_CONFIG
 from data_acquisition import DataAcquisition
 from utils.preprocessing import DataPreprocessor, prepare_features_target
 from utils.metrics import PerformanceReport
@@ -201,10 +201,17 @@ class HousingValuationPipeline:
         from explainability.shap_analysis import SHAPAnalyzer
         from explainability.lime_analysis import LIMEAnalyzer
 
-        # SHAP analysis
+        # SHAP analysis. A StackingRegressor is not a tree model, so
+        # TreeExplainer cannot handle it and SHAP falls back to KernelExplainer,
+        # which needs a background sample of the training data.
         logger.info("\nGenerating SHAP analysis...")
+        background = self.X_train_transformed.sample(
+            n=min(SHAP_CONFIG['sample_size'], len(self.X_train_transformed)),
+            random_state=MODEL_CONFIG['random_state'],
+        )
         shap_analyzer = SHAPAnalyzer(
             self.model.model,
+            X_background=background,
             feature_names=self.fe_pipeline.get_feature_names()
         )
         shap_plots, shap_importance = shap_analyzer.generate_full_report(self.X_test_transformed)
