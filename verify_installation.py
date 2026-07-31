@@ -9,32 +9,48 @@ from pathlib import Path
 # Add src to path
 sys.path.append(str(Path(__file__).parent / 'src'))
 
+#: Packages every mode needs
+REQUIRED_PACKAGES = [
+    'pandas', 'numpy', 'sklearn', 'xgboost', 'lightgbm',
+    'optuna', 'matplotlib', 'seaborn', 'scipy', 'statsmodels',
+]
+
+#: Packages only one mode needs, mapped to what they unlock
+OPTIONAL_PACKAGES = {
+    'shap': 'SHAP explainability',
+    'lime': 'LIME explainability (--mode explain)',
+}
+
+
 def test_imports():
     """Test that all modules can be imported"""
     print("Testing imports...")
-    
-    try:
-        import pandas as pd
-        import numpy as np
-        import sklearn
-        import xgboost
-        import lightgbm
-        import optuna
-        import shap
-        import lime
-        import matplotlib
-        import seaborn
-        import scipy
-        import statsmodels
-        
-        print("✓ All required packages installed successfully")
-        return True
-        
-    except ImportError as e:
-        print(f"✗ Import error: {e}")
+
+    import importlib
+
+    missing = []
+    for name in REQUIRED_PACKAGES:
+        try:
+            importlib.import_module(name)
+        except ImportError:
+            missing.append(name)
+
+    if missing:
+        print(f"✗ Missing required packages: {', '.join(missing)}")
         print("\nPlease install missing packages:")
         print("  pip install -r requirements.txt")
         return False
+
+    print("✓ All required packages installed successfully")
+
+    # Absent optional packages only disable one mode, so report and carry on
+    for name, purpose in OPTIONAL_PACKAGES.items():
+        try:
+            importlib.import_module(name)
+        except ImportError:
+            print(f"! Optional package '{name}' missing - {purpose} unavailable")
+
+    return True
 
 
 def test_project_structure():
