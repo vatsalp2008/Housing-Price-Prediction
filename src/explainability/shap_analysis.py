@@ -32,6 +32,9 @@ class SHAPAnalyzer:
         self.feature_names = feature_names
         self.explainer = None
         self.shap_values = None
+        # The rows the stored shap_values actually correspond to. Plots must use
+        # this rather than the full dataset when sampling has taken place.
+        self.X_explained = None
         
     def create_explainer(self, X_background=None):
         """
@@ -82,11 +85,47 @@ class SHAPAnalyzer:
         
         logger.info(f"Calculating SHAP values for {len(X_sample)} samples...")
         self.shap_values = self.explainer.shap_values(X_sample)
-        
+        self.X_explained = X_sample
+
         logger.info("SHAP values calculated successfully")
-        
+
         return self.shap_values
     
+    def _resolve_plot_data(self, X, shap_values):
+        """
+        Pick the feature rows that line up with the given SHAP values
+
+        Args:
+            X: Explicitly supplied dataset, or None
+            shap_values: SHAP values about to be plotted
+
+        Returns:
+            The dataset to plot against
+
+        Raises:
+            ValueError: if the row counts do not match
+        """
+        data = X if X is not None else self.X_explained
+        if data is None:
+            data = self.X_background
+
+        if data is not None and len(data) != len(shap_values):
+            # calculate_shap_values may have sampled; plotting the full dataset
+            # against sampled values trips an assertion deep inside shap
+            if self.X_explained is not None and len(self.X_explained) == len(shap_values):
+                logger.warning(
+                    f"Supplied dataset has {len(data)} rows but SHAP values cover "
+                    f"{len(shap_values)}; using the explained subset instead"
+                )
+                return self.X_explained
+
+            raise ValueError(
+                f"SHAP values cover {len(shap_values)} rows but the dataset has "
+                f"{len(data)}"
+            )
+
+        return data
+
     def plot_summary(self, X=None, shap_values=None, max_display=None, save_path=None):
         """
         Create SHAP summary plot (global feature importance)
@@ -108,10 +147,12 @@ class SHAPAnalyzer:
         
         logger.info("Creating SHAP summary plot...")
         
+        plot_data = self._resolve_plot_data(X, shap_values)
+
         plt.figure(figsize=(12, 8))
         shap.summary_plot(
-            shap_values, 
-            X if X is not None else self.X_background,
+            shap_values,
+            plot_data,
             feature_names=self.feature_names,
             max_display=max_display,
             show=False
@@ -149,10 +190,12 @@ class SHAPAnalyzer:
         
         logger.info("Creating SHAP bar plot...")
         
+        plot_data = self._resolve_plot_data(X, shap_values)
+
         plt.figure(figsize=(10, 8))
         shap.summary_plot(
             shap_values,
-            X if X is not None else self.X_background,
+            plot_data,
             feature_names=self.feature_names,
             plot_type='bar',
             max_display=max_display,
@@ -189,11 +232,13 @@ class SHAPAnalyzer:
         
         logger.info(f"Creating SHAP dependence plot for feature: {feature_idx}")
         
+        plot_data = self._resolve_plot_data(X, shap_values)
+
         plt.figure(figsize=(10, 6))
         shap.dependence_plot(
             feature_idx,
             shap_values,
-            X if X is not None else self.X_background,
+            plot_data,
             feature_names=self.feature_names,
             show=False
         )
