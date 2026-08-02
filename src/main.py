@@ -160,8 +160,8 @@ class HousingValuationPipeline:
             feature_names=self.fe_pipeline.get_feature_names()
         )
         
-        # Save model
-        self.model.save_model()
+        # Save model together with the encoders that produced its features
+        self.model.save_model(feature_pipeline=self.fe_pipeline)
         
         logger.info("Model training complete")
         return self.model
@@ -271,6 +271,20 @@ class HousingValuationPipeline:
         self.model = StackedEnsembleModel()
         self.model.load_model()
 
+        # Prefer the encoders saved with the model over refitting them, so the
+        # features match exactly what the model was trained on
+        if self.model.feature_pipeline is not None:
+            logger.info("Using the feature pipeline saved with the model")
+            self.fe_pipeline = self.model.feature_pipeline
+            self.X_train, self.y_train = prepare_features_target(self.train_df)
+            self.X_test, self.y_test = prepare_features_target(self.test_df)
+            self.X_test_transformed = self.fe_pipeline.transform(self.X_test)
+        elif self.X_test_transformed is None:
+            logger.warning(
+                "Saved model has no feature pipeline; refitting from training data"
+            )
+            self.run_feature_engineering()
+
         self.test_predictions = self.model.predict(self.X_test_transformed)
 
         predictions_df = pd.DataFrame(
@@ -359,12 +373,10 @@ def main():
         pipeline.run_evaluation()
         
     elif args.mode == 'predict':
-        # Rebuild the same feature space, then score with the saved model.
-        # The split and feature engineering are deterministic given a fixed
-        # random_state, so this reproduces the training-time encodings.
+        # run_prediction applies the encoders saved with the model, so there is
+        # no need to refit the feature pipeline here
         pipeline.run_data_acquisition()
         pipeline.run_preprocessing()
-        pipeline.run_feature_engineering()
         pipeline.run_prediction()
 
     elif args.mode == 'explain':
