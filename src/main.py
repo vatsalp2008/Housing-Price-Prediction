@@ -279,6 +279,10 @@ class HousingValuationPipeline:
             self.X_train, self.y_train = prepare_features_target(self.train_df)
             self.X_test, self.y_test = prepare_features_target(self.test_df)
             self.X_test_transformed = self.fe_pipeline.transform(self.X_test)
+            # Explainability needs the training features too. transform() is
+            # correct here rather than fit_transform(): it reproduces what the
+            # encoders do at inference time.
+            self.X_train_transformed = self.fe_pipeline.transform(self.X_train)
         elif self.X_test_transformed is None:
             logger.warning(
                 "Saved model has no feature pipeline; refitting from training data"
@@ -380,19 +384,13 @@ def main():
         pipeline.run_prediction()
 
     elif args.mode == 'explain':
-        # Load existing model and explain
+        # Load existing model and explain. run_prediction loads the model along
+        # with its saved encoders and produces the test predictions.
         logger.info("Loading existing model...")
         pipeline.run_data_acquisition()
         pipeline.run_preprocessing()
-        pipeline.run_feature_engineering()
-        
-        # Load model
-        pipeline.model = StackedEnsembleModel()
-        pipeline.model.load_model()
-        
-        # Generate predictions
-        pipeline.test_predictions = pipeline.model.predict(pipeline.X_test_transformed)
-        
+        pipeline.run_prediction()
+
         # Run explainability
         shap_importance, lime_results = pipeline.run_explainability()
         pipeline.run_validation(shap_importance)
