@@ -32,6 +32,9 @@ class StackedEnsembleModel:
         self.meta_learner_params = meta_learner_params or BAYESIAN_RIDGE_PARAMS
         self.model = None
         self.feature_names = None
+        # Fitted feature pipeline, persisted with the model so inference does
+        # not have to refit the encoders from training data
+        self.feature_pipeline = None
         
     def _is_fitted(self) -> bool:
         """Whether the stacking regressor has been fitted.
@@ -164,24 +167,30 @@ class StackedEnsembleModel:
 
         return base_predictions
     
-    def save_model(self, filename: str = 'stacked_ensemble.pkl'):
+    def save_model(self, filename: str = 'stacked_ensemble.pkl', feature_pipeline=None):
         """
         Save trained model to disk
-        
+
         Args:
             filename: Name of file to save
+            feature_pipeline: Fitted feature pipeline to store alongside the
+                model, so predictions can reuse the exact training-time encoders
         """
         if self.model is None:
             raise ValueError("No model to save. Train the model first.")
-        
+
+        if feature_pipeline is not None:
+            self.feature_pipeline = feature_pipeline
+
         filepath = MODELS_DIR / filename
-        
+
         # Save model and feature names
         model_data = {
             'model': self.model,
             'feature_names': self.feature_names,
             'base_learner_params': self.base_learner_params,
             'meta_learner_params': self.meta_learner_params,
+            'feature_pipeline': self.feature_pipeline,
         }
         
         joblib.dump(model_data, filepath)
@@ -207,6 +216,8 @@ class StackedEnsembleModel:
         self.feature_names = model_data.get('feature_names')
         self.base_learner_params = model_data.get('base_learner_params')
         self.meta_learner_params = model_data.get('meta_learner_params')
+        # Absent in models saved before the pipeline was persisted
+        self.feature_pipeline = model_data.get('feature_pipeline')
         
         logger.info(f"Model loaded from {filepath}")
         
