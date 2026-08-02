@@ -63,6 +63,23 @@ class LIMEAnalyzer:
         
         return self.explainer
     
+    @staticmethod
+    def _as_row(instance):
+        """
+        Coerce a single instance to a 2D array of shape (1, n_features)
+
+        Args:
+            instance: Series, single-row DataFrame, or 1D array
+
+        Returns:
+            2D numpy array suitable for model.predict
+        """
+        if isinstance(instance, pd.Series):
+            return instance.values.reshape(1, -1)
+        if isinstance(instance, pd.DataFrame):
+            return instance.values
+        return np.asarray(instance).reshape(1, -1)
+
     def explain_instance(self, instance, num_features=None):
         """
         Explain a single prediction
@@ -158,14 +175,7 @@ class LIMEAnalyzer:
         explanation = self.explain_instance(instance)
         
         # Get prediction
-        if isinstance(instance, pd.Series):
-            instance_array = instance.values.reshape(1, -1)
-        elif isinstance(instance, pd.DataFrame):
-            instance_array = instance.values
-        else:
-            instance_array = instance.reshape(1, -1)
-        
-        prediction = self.model.predict(instance_array)[0]
+        prediction = self.model.predict(self._as_row(instance))[0]
         
         # Log results
         logger.info("=" * 70)
@@ -243,22 +253,25 @@ class LIMEAnalyzer:
         """
         explanations = []
         predictions = []
-        
-        for i, instance in enumerate(instances):
+
+        # Iterating a DataFrame directly yields column names, not rows
+        if isinstance(instances, pd.DataFrame):
+            rows = [row for _, row in instances.iterrows()]
+        else:
+            rows = list(instances)
+
+        for instance in rows:
             exp = self.explain_instance(instance)
             explanations.append(exp)
-            
-            if isinstance(instance, pd.Series):
-                instance_array = instance.values.reshape(1, -1)
-            else:
-                instance_array = instance.reshape(1, -1)
-            
+
+            instance_array = self._as_row(instance)
+
             pred = self.model.predict(instance_array)[0]
             predictions.append(pred)
         
         # Create comparison DataFrame
         comparison = pd.DataFrame({
-            'Instance': range(len(instances)),
+            'Instance': range(len(rows)),
             'Prediction': predictions,
         })
         
