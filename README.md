@@ -118,11 +118,20 @@ Housing Price Prediction/
 │   └── utils/
 │       ├── preprocessing.py            # Missing values, outliers, splitting
 │       └── metrics.py                  # Performance evaluation
+├── tests/                               # Pytest suite
+│   ├── conftest.py                     # Puts src/ on sys.path
+│   ├── test_metrics.py                 # Evaluation metrics
+│   ├── test_preprocessing.py           # Imputation, outliers, splitting
+│   ├── test_feature_engineering.py     # Encoding and transformations
+│   ├── test_validation.py              # Residuals & permutation importance
+│   └── test_shap_analysis.py           # SHAP explainability
 ├── data/                                # Dataset storage
 ├── outputs/                             # Visualizations and reports
 ├── models_saved/                        # Trained model artifacts
 ├── notebooks/                           # Jupyter notebooks for exploration
+├── verify_installation.py               # Dependency & structure check
 ├── requirements.txt                     # Python dependencies
+├── LICENSE                             # MIT license
 ├── README.md                           # This file
 └── EXECUTIVE_SUMMARY.md                # Performance & insights report
 ```
