@@ -151,8 +151,10 @@ class LIMEAnalyzer:
             save_path = OUTPUT_DIR / 'lime_report.html'
         
         html = explanation.as_html()
-        
-        with open(save_path, 'w') as f:
+
+        # Explicit UTF-8: the default encoding is locale-dependent and fails on
+        # non-ASCII feature names under Windows' cp1252
+        with open(save_path, 'w', encoding='utf-8') as f:
             f.write(html)
         
         logger.info(f"LIME HTML report saved to {save_path}")
