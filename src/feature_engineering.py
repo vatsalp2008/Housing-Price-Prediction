@@ -426,7 +426,7 @@ def main():
     
     # Preprocess
     preprocessor = DataPreprocessor()
-    df = preprocessor.handle_missing_values(df)
+    df = preprocessor.handle_missing_values(df, fit=True)
     df = preprocessor.remove_extreme_outliers(df)
     
     # Split features and target

@@ -411,10 +411,12 @@ def main():
     df, _ = acquisition.prepare_dataset()
     
     preprocessor = DataPreprocessor()
-    df = preprocessor.handle_missing_values(df)
-    df = preprocessor.remove_extreme_outliers(df)
-    
+
+    # Split first so imputation is fit on training data only
     train_df, test_df = preprocessor.stratified_split(df)
+    train_df = preprocessor.handle_missing_values(train_df, fit=True)
+    test_df = preprocessor.handle_missing_values(test_df, fit=False)
+    train_df = preprocessor.remove_extreme_outliers(train_df)
     
     X_train, y_train = prepare_features_target(train_df)
     X_test, y_test = prepare_features_target(test_df)

@@ -329,7 +329,7 @@ def main():
     df, _ = acquisition.prepare_dataset()
     
     preprocessor = DataPreprocessor()
-    df = preprocessor.handle_missing_values(df)
+    df = preprocessor.handle_missing_values(df, fit=True)
     df = preprocessor.remove_extreme_outliers(df)
     
     # Use subset for quick testing
