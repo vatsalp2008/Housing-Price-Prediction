@@ -42,14 +42,17 @@ MACRO_INDICATORS = {
 FEATURE_CONFIG = {
     'skewness_threshold': 0.75,  # Threshold for Box-Cox transformation
     'target_encoding_smoothing': 10,  # Smoothing parameter for target encoding
+    # Column names follow the Ames dataset, which separates words with spaces.
+    # The compact Kaggle-style spellings used previously matched nothing, so
+    # every interaction term was silently skipped.
     'interaction_terms': [
-        ('OverallQual', 'GrLivArea'),
-        ('YearBuilt', 'TotalBsmtSF'),
-        ('GarageArea', 'GarageCars'),
-        ('1stFlrSF', '2ndFlrSF'),
-        ('OverallQual', 'YearBuilt'),
+        ('Overall Qual', 'Gr Liv Area'),
+        ('Year Built', 'Total Bsmt SF'),
+        ('Garage Area', 'Garage Cars'),
+        ('1st Flr SF', '2nd Flr SF'),
+        ('Overall Qual', 'Year Built'),
     ],
-    'high_cardinality_cols': ['Neighborhood', 'Exterior1st', 'Exterior2nd'],
+    'high_cardinality_cols': ['Neighborhood', 'Exterior 1st', 'Exterior 2nd'],
 }
 
 # Model Parameters
