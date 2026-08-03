@@ -38,17 +38,31 @@ class InteractionFeatureGenerator(BaseEstimator, TransformerMixin):
     def transform(self, X):
         """Generate interaction features"""
         X = X.copy()
-        
+
+        missing = []
+
         for feat1, feat2 in self.interaction_pairs:
             if feat1 in X.columns and feat2 in X.columns:
                 # Create interaction name
                 interaction_name = f"{feat1}_x_{feat2}"
-                
+
                 # Generate interaction (multiplication)
                 X[interaction_name] = X[feat1] * X[feat2]
-                
+
                 logger.debug(f"Created interaction: {interaction_name}")
-        
+            else:
+                missing.append(
+                    (feat1, feat2, [f for f in (feat1, feat2) if f not in X.columns])
+                )
+
+        # A silently skipped pair means the configured name does not match the
+        # data, which is easy to miss and disables the feature entirely
+        for feat1, feat2, absent in missing:
+            logger.warning(
+                f"Skipping interaction '{feat1}' x '{feat2}': "
+                f"column(s) not in data: {absent}"
+            )
+
         return X
 
 
@@ -122,6 +136,11 @@ class TargetEncoder(BaseEstimator, TransformerMixin):
                 self.encodings[col] = self._smoothed_means(X[col], y, self.global_mean)
 
                 logger.info(f"Target encoding fitted for '{col}': {len(self.encodings[col])} categories")
+            else:
+                # Otherwise the column is quietly left unencoded
+                logger.warning(
+                    f"Skipping target encoding for '{col}': column not in data"
+                )
 
         return self
 
