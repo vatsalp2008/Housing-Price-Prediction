@@ -63,6 +63,26 @@ class LIMEAnalyzer:
         
         return self.explainer
     
+    def _predict(self, X_array):
+        """
+        Predict on LIME's perturbed samples
+
+        LIME always passes plain numpy arrays. Handing those to a model fitted
+        on a DataFrame drops the column names, which makes scikit-learn warn and
+        relies on positional column order. Re-attaching the names keeps the
+        model's input identical in shape and labelling to what it was fitted on.
+
+        Args:
+            X_array: 2D array of perturbed samples
+
+        Returns:
+            Model predictions
+        """
+        if self.feature_names is not None and len(self.feature_names) == X_array.shape[1]:
+            X_array = pd.DataFrame(X_array, columns=self.feature_names)
+
+        return self.model.predict(X_array)
+
     @staticmethod
     def _as_row(instance):
         """
@@ -109,7 +129,7 @@ class LIMEAnalyzer:
         # Generate explanation
         explanation = self.explainer.explain_instance(
             instance_array,
-            self.model.predict,
+            self._predict,
             num_features=num_features,
             num_samples=LIME_CONFIG['num_samples']
         )
@@ -177,7 +197,7 @@ class LIMEAnalyzer:
         explanation = self.explain_instance(instance)
         
         # Get prediction
-        prediction = self.model.predict(self._as_row(instance))[0]
+        prediction = self._predict(self._as_row(instance))[0]
         
         # Log results
         logger.info("=" * 70)
@@ -268,7 +288,7 @@ class LIMEAnalyzer:
 
             instance_array = self._as_row(instance)
 
-            pred = self.model.predict(instance_array)[0]
+            pred = self._predict(instance_array)[0]
             predictions.append(pred)
         
         # Create comparison DataFrame
