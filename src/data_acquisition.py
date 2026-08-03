@@ -43,38 +43,48 @@ class DataAcquisition:
             return self.data_path
         
         logger.info("Downloading Ames Housing Dataset...")
-        
-        # Try primary URL first
-        try:
-            response = requests.get(AMES_DATASET_URL, timeout=30)
-            response.raise_for_status()
-            
-            with open(self.data_path, 'wb') as f:
-                f.write(response.content)
-            
-            logger.info(f"Dataset downloaded successfully to {self.data_path}")
-            return self.data_path
-            
-        except Exception as e:
-            logger.warning(f"Primary URL failed: {e}. Trying backup URL...")
-            
-            # Try backup URL
+
+        errors = []
+
+        for label, url in (('primary', AMES_DATASET_URL),
+                           ('backup', AMES_DATASET_BACKUP_URL)):
             try:
-                response = requests.get(AMES_DATASET_BACKUP_URL, timeout=30)
-                response.raise_for_status()
-                
-                with open(self.data_path, 'wb') as f:
-                    f.write(response.content)
-                
-                logger.info(f"Dataset downloaded from backup URL to {self.data_path}")
+                self._download_to(url)
+            except requests.RequestException as exc:
+                errors.append(f"{label}: {exc}")
+                logger.warning(f"{label.capitalize()} URL failed: {exc}")
+            else:
+                logger.info(f"Dataset downloaded from {label} URL to {self.data_path}")
                 return self.data_path
-                
-            except Exception as e2:
-                logger.error(f"Both download attempts failed: {e2}")
-                raise RuntimeError(
-                    "Could not download dataset. Please download manually from "
-                    "http://jse.amstat.org/v19n3/decock/AmesHousing.txt"
-                )
+
+        logger.error("Both download attempts failed: " + "; ".join(errors))
+        raise RuntimeError(
+            "Could not download dataset. Please download manually from "
+            f"{AMES_DATASET_URL}. Attempts: " + "; ".join(errors)
+        )
+
+    def _download_to(self, url: str):
+        """
+        Fetch a URL and replace the dataset file atomically
+
+        Writing straight to data_path left a truncated file behind if the
+        transfer failed part way, and load_dataset() would then happily read it.
+
+        Args:
+            url: Source to download from
+        """
+        response = requests.get(url, timeout=30)
+        response.raise_for_status()
+
+        tmp_path = self.data_path.with_suffix(self.data_path.suffix + '.part')
+        try:
+            with open(tmp_path, 'wb') as f:
+                f.write(response.content)
+            tmp_path.replace(self.data_path)
+        finally:
+            # Nothing to clean up on success; replace() has already moved it
+            if tmp_path.exists():
+                tmp_path.unlink()
     
     def load_dataset(self) -> pd.DataFrame:
         """
