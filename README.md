@@ -27,13 +27,19 @@ A sophisticated machine learning system for housing price prediction that combin
 
 ## 📊 Performance Metrics
 
-The model achieves strong performance on the Ames Housing Dataset:
+Measured on a 586-row held-out test set with default hyperparameters
+(no `--optimize`):
 
-- **R² Score**: > 0.85 (target: 0.85)
-- **RMSE**: < $25,000 (typical house price: $180,000)
-- **MAE**: Interpretable error magnitude for business decisions
+| Metric | Measured | Target | Status |
+|--------|----------|--------|--------|
+| R² Score | 0.900 | > 0.85 | ✅ |
+| RMSE | $26,345 | < $25,000 | ⚠️ misses by ~$1,300 |
+| MAE | $14,418 | — | reference |
 
-*See `EXECUTIVE_SUMMARY.md` for detailed performance analysis and key price drivers.*
+Residual diagnostics currently **fail** both the homoscedasticity and normality
+tests, so prediction intervals from a single global residual standard deviation
+are not trustworthy. See `EXECUTIVE_SUMMARY.md` for the full analysis, the
+measured price drivers, and the known limitations.
 
 ## 🚀 Quick Start
 
