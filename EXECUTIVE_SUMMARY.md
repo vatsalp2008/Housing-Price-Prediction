@@ -93,9 +93,26 @@ The model incorporates macroeconomic indicators to simulate market-adjusted valu
 
 - **30-Year Mortgage Rate**: 6.5% (as of January 2026)
 - **Consumer Price Index (CPI)**: 320.0
-- **Market Adjustment Factor**: 1.39× (inflation-adjusted from dataset baseline)
+- **Market Adjustment Factor**: 0.856×
 
-This layer allows the model to account for broader economic conditions affecting housing affordability and demand.
+The factor combines two opposing terms against the dataset's baseline
+(CPI 230, mortgage rate 4.0%):
+
+| Term | Value | Direction |
+|------|-------|-----------|
+| Inflation (320 / 230) | 1.391 | Raises prices |
+| Mortgage impact (4.0 / 6.5) | 0.615 | Lowers prices |
+| **Product** | **0.856** | Net downward |
+
+Higher rates outweigh inflation, so the net adjustment is *below* 1.0. Earlier
+versions of this document reported 1.39×, which is the inflation term with the
+mortgage impact omitted.
+
+**Caveat:** all three values are computed from scalar constants, so they are
+identical for every row and cannot influence any prediction — the feature
+engineering step logs them as zero-variance. Making the adjustment vary per row
+(for example with `Years_Since_Sale`) is required before this layer affects
+valuations.
 
 ## Key Insights & Recommendations
 
