@@ -141,16 +141,39 @@ valuations.
 
 ### Residual Analysis
 
-- **Breusch-Pagan Test**: p-value = 0.18 (> 0.05) ✅
-  - **Interpretation**: Homoscedasticity assumption satisfied - residuals show constant variance
-- **Shapiro-Wilk Test**: p-value = 0.06 (> 0.05) ✅
-  - **Interpretation**: Residuals approximately normally distributed
+Measured on the 586-row test set with all 88 features active. **Both classical
+assumptions are violated**, decisively:
+
+| Test | p-value | Threshold | Result |
+|------|---------|-----------|--------|
+| Breusch-Pagan (homoscedasticity) | 5.0e-22 | > 0.05 | ❌ Heteroscedastic |
+| Shapiro-Wilk (normality) | 3.2e-29 | > 0.05 | ❌ Non-normal |
+
+Residual skewness is 0.93 and kurtosis is 19.1 — very heavy tails, meaning a
+small number of properties are predicted far worse than typical. The largest
+single error is $202,683 against a mean sale price near $180,000.
+
+Earlier versions of this document reported p = 0.18 and p = 0.06 with both tests
+passing. Those values were not measured from this model, and the true results are
+the opposite conclusion.
+
+**What this means in practice.** The point predictions remain usable — R² is 0.90
+— but the error is not constant across the price range, so any prediction
+interval derived from a single global residual standard deviation
+(`calculate_prediction_intervals` does exactly this) will be too narrow for
+expensive homes and too wide for cheap ones. Quantile regression or a
+log-transformed target would address the heteroscedasticity.
 
 ### Permutation Importance Validation
 
-- **Consistency with SHAP**: 85% overlap in top 15 features
-- **No Overfitting Detected**: All features show positive importance
-- **Stable Rankings**: Multiple permutation repeats show consistent feature importance
+- **Agreement with SHAP**: the two methods select the same top three features
+  (`Overall Qual`, `Gr Liv Area`, `Neighborhood_encoded`), differing only in
+  their ordering of the first two
+- **23 of 88 features have zero or negative importance**, meaning the model
+  performs no worse when they are shuffled. They are candidates for removal.
+  An earlier claim that all features show positive importance was incorrect
+- **Stable rankings**: importance is averaged over 10 permutation repeats, with
+  standard deviations roughly 5-10% of the mean for the top features
 
 ## Explainability Highlights
 
@@ -215,7 +238,7 @@ The Housing Valuation Engine successfully delivers on all key objectives:
 ✅ **Accuracy**: Exceeds R² target (0.902 vs. 0.85)  
 ⚠️ **RMSE**: $26,041 against a < $25,000 target, before hyperparameter tuning  
 ✅ **Interpretability**: SHAP and LIME provide transparent, actionable insights  
-✅ **Robustness**: Passes homoscedasticity and normality tests  
+❌ **Robustness**: Residuals are heteroscedastic and non-normal (see above)  
 ⚠️ **Generalization**: 0.097 train-test R² gap, just inside the warning threshold  
 ✅ **Production-Ready**: Modular architecture, comprehensive logging, model persistence
 
