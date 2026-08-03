@@ -30,4 +30,6 @@ tqdm==4.66.1
 requests==2.31.0
 
 # Testing
-pytest==7.4.4
+# Unpinned minimum rather than an exact pin: the suite uses only long-stable
+# pytest APIs and is verified against 9.x
+pytest>=7.4
