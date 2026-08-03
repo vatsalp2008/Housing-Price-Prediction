@@ -68,31 +68,59 @@ def print_metrics(metrics: Dict[str, float], dataset_name: str = "Dataset"):
     print('=' * 60)
 
 
-def calculate_prediction_intervals(y_pred: np.ndarray, residuals: np.ndarray, 
-                                   confidence: float = 0.95) -> Tuple[np.ndarray, np.ndarray]:
+def calculate_prediction_intervals(y_pred: np.ndarray, residuals: np.ndarray,
+                                   confidence: float = 0.95,
+                                   method: str = 'normal') -> Tuple[np.ndarray, np.ndarray]:
     """
     Calculate prediction intervals
-    
+
+    Both methods produce one constant-width band for every row, so neither is
+    valid when the residual spread varies with price. This model's residuals
+    are measurably heteroscedastic and heavy-tailed (see EXECUTIVE_SUMMARY.md),
+    which makes these intervals too narrow for expensive homes and too wide for
+    cheap ones. Quantile regression is the right fix; until then prefer
+    method='empirical', which at least does not assume normality.
+
     Args:
         y_pred: Predicted values
         residuals: Residuals from predictions
         confidence: Confidence level (default 95%)
-        
+        method: 'normal' scales the residual standard deviation by a z-score.
+            'empirical' reads the residual quantiles directly, which respects
+            skew and heavy tails.
+
     Returns:
         Tuple of (lower_bound, upper_bound)
+
+    Raises:
+        ValueError: for an unknown method or a confidence outside (0, 1)
     """
-    # Calculate standard error
-    std_error = np.std(residuals)
-    
-    # Calculate z-score for confidence level
-    z_score = stats.norm.ppf((1 + confidence) / 2)
-    
-    # Calculate intervals
-    margin = z_score * std_error
-    lower_bound = y_pred - margin
-    upper_bound = y_pred + margin
-    
-    return lower_bound, upper_bound
+    if not 0 < confidence < 1:
+        raise ValueError(f"confidence must be in (0, 1), got {confidence}")
+
+    residuals = np.asarray(residuals, dtype=float)
+    tail = (1 - confidence) / 2
+
+    if method == 'normal':
+        # Calculate standard error
+        std_error = np.std(residuals)
+
+        # Calculate z-score for confidence level
+        z_score = stats.norm.ppf((1 + confidence) / 2)
+
+        # Symmetric band around each prediction
+        margin = z_score * std_error
+        lower_offset, upper_offset = -margin, margin
+
+    elif method == 'empirical':
+        # Residual quantiles, so an asymmetric error distribution stays asymmetric
+        lower_offset = float(np.quantile(residuals, tail))
+        upper_offset = float(np.quantile(residuals, 1 - tail))
+
+    else:
+        raise ValueError(f"method must be 'normal' or 'empirical', got {method!r}")
+
+    return y_pred + lower_offset, y_pred + upper_offset
 
 
 def rmse_cv_score(model, X, y, cv=5):
