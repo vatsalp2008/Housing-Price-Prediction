@@ -299,12 +299,17 @@ class BoxCoxTransformer(BaseEstimator, TransformerMixin):
 class FeatureEngineeringPipeline:
     """Complete feature engineering pipeline"""
     
-    def __init__(self, target_col: str = 'SalePrice'):
+    def __init__(self, target_col: str = 'SalePrice', drop_constant_features: bool = False):
         """
         Args:
             target_col: Name of target variable column
+            drop_constant_features: Remove features with a single distinct value.
+                They cannot influence a prediction, and they also silently
+                satisfy diagnostics that require a constant column, so dropping
+                them is off by default to keep the feature set stable.
         """
         self.target_col = target_col
+        self.drop_constant_features = drop_constant_features
         self.interaction_generator = InteractionFeatureGenerator()
         self.target_encoder = TargetEncoder()
         self.boxcox_transformer = BoxCoxTransformer()
@@ -384,17 +389,24 @@ class FeatureEngineeringPipeline:
         logger.info("Step 4: Applying Box-Cox transformations...")
         X = self.boxcox_transformer.fit(X).transform(X)
         
-        # Store feature names
-        self.feature_names = X.columns.tolist()
-
         # Zero-variance columns carry no signal and can silently prop up
         # diagnostics that need a constant term, so surface them explicitly
         self.constant_features = [col for col in X.columns if X[col].nunique(dropna=False) <= 1]
         if self.constant_features:
-            logger.warning(
-                f"{len(self.constant_features)} feature(s) have a single distinct value "
-                f"and cannot contribute to any model: {self.constant_features}"
-            )
+            if self.drop_constant_features:
+                X = X.drop(columns=self.constant_features)
+                logger.info(
+                    f"Dropped {len(self.constant_features)} zero-variance feature(s): "
+                    f"{self.constant_features}"
+                )
+            else:
+                logger.warning(
+                    f"{len(self.constant_features)} feature(s) have a single distinct value "
+                    f"and cannot contribute to any model: {self.constant_features}"
+                )
+
+        # Store feature names after any dropping, so transform() stays aligned
+        self.feature_names = X.columns.tolist()
 
         logger.info(f"Feature engineering complete. Final feature count: {len(self.feature_names)}")
 
