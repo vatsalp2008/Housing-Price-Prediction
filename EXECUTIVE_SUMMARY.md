@@ -9,19 +9,35 @@ hyperparameters**, i.e. without `--optimize`:
 
 | Metric | Value | Target | Status |
 |--------|-------|--------|--------|
-| **R² Score** | 0.902 | > 0.85 | ✅ Exceeds |
-| **RMSE** | $26,041 | < $25,000 | ⚠️ Misses by ~$1,000 |
-| **MAE** | $14,320 | N/A | ℹ️ Reference |
-| **MAPE** | 7.9% | N/A | ℹ️ Reference |
+| **R² Score** | 0.900 | > 0.85 | ✅ Exceeds |
+| **RMSE** | $26,345 | < $25,000 | ⚠️ Misses by ~$1,300 |
+| **MAE** | $14,418 | N/A | ℹ️ Reference |
+| **MAPE** | 8.0% | N/A | ℹ️ Reference |
 
 Hyperparameter optimization is not included in these figures and is the
 expected route to bringing RMSE under the $25,000 target.
 
+### Do the interaction terms help?
+
+They currently do not. The configured interaction and target-encoding column
+names did not match the Ames column names, so those features were silently
+skipped and never reached the model. With the names corrected, the feature
+count rises from 83 to 88 and accuracy moves slightly the *wrong* way:
+
+| Configuration | Test R² | Test RMSE |
+|---------------|---------|-----------|
+| Interactions skipped (83 features) | 0.9021 | $26,041 |
+| Interactions active (88 features) | 0.8998 | $26,345 |
+
+The difference is small and within run-to-run noise, but there is no evidence
+these engineered features earn their place. They are worth re-evaluating rather
+than assuming they help.
+
 ### Model Generalization
 
 - **Training R²**: 0.999
-- **Test R²**: 0.902
-- **Generalization Gap**: 0.097
+- **Test R²**: 0.900
+- **Generalization Gap**: 0.099
 
 The ensemble fits the training set almost perfectly, so the gap is driven by
 training-set memorization rather than weak test performance. It sits just under
