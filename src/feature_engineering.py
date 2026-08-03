@@ -76,20 +76,27 @@ class TargetEncoder(BaseEstimator, TransformerMixin):
     statistics fitted on the full training set.
     """
 
-    def __init__(self, columns: List[str] = None, smoothing: float = 10.0,
-                 n_splits: int = 5, random_state: int = None):
+    def __init__(self, columns: List[str] = None, smoothing: float = None,
+                 n_splits: int = None, random_state: int = None):
         """
         Args:
             columns: Columns to apply target encoding
-            smoothing: Smoothing parameter (higher = more regularization)
+            smoothing: Smoothing parameter, higher means more regularization
+                (defaults to FEATURE_CONFIG)
             n_splits: Folds used to build out-of-fold training encodings
+                (defaults to MODEL_CONFIG's cv_folds)
             random_state: Seed for fold assignment (defaults to MODEL_CONFIG)
         """
         # As above: an empty list means "encode nothing", not "use the default"
         if columns is None:
             columns = FEATURE_CONFIG['high_cardinality_cols']
         self.columns = columns
+        # Read from config so editing it actually changes behaviour
+        if smoothing is None:
+            smoothing = FEATURE_CONFIG['target_encoding_smoothing']
         self.smoothing = smoothing
+        if n_splits is None:
+            n_splits = MODEL_CONFIG['cv_folds']
         self.n_splits = n_splits
         self.random_state = random_state if random_state is not None else MODEL_CONFIG['random_state']
         self.encodings = {}
@@ -224,12 +231,15 @@ class TargetEncoder(BaseEstimator, TransformerMixin):
 class BoxCoxTransformer(BaseEstimator, TransformerMixin):
     """Apply Box-Cox transformation to skewed features"""
     
-    def __init__(self, skewness_threshold: float = 0.75, lmbda: float = 0.15):
+    def __init__(self, skewness_threshold: float = None, lmbda: float = 0.15):
         """
         Args:
             skewness_threshold: Minimum skewness to apply transformation
+                (defaults to FEATURE_CONFIG)
             lmbda: Box-Cox lambda (0.15 is a common choice for right-skewed data)
         """
+        if skewness_threshold is None:
+            skewness_threshold = FEATURE_CONFIG['skewness_threshold']
         self.skewness_threshold = skewness_threshold
         self.lmbda = lmbda
         self.skewed_features = []
