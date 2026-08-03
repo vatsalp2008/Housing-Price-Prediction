@@ -184,18 +184,21 @@ class LIMEAnalyzer:
         
         return save_path
     
-    def explain_and_visualize(self, instance, actual_value=None, save_prefix='lime'):
+    def explain_and_visualize(self, instance, actual_value=None, save_prefix='lime',
+                              save_dir=None):
         """
         Complete explanation workflow: explain, plot, and save HTML
-        
+
         Args:
             instance: Instance to explain
             actual_value: Actual target value (optional, for comparison)
             save_prefix: Prefix for saved files
-            
+            save_dir: Directory to write into (defaults to OUTPUT_DIR)
+
         Returns:
             Dictionary with explanation and file paths
         """
+        save_dir = Path(save_dir) if save_dir is not None else OUTPUT_DIR
         # Generate explanation
         explanation = self.explain_instance(instance)
         
@@ -218,8 +221,8 @@ class LIMEAnalyzer:
             logger.info(f"  {feature}: {weight:+.2f}")
         
         # Save visualizations
-        plot_path = self.plot_explanation(explanation, OUTPUT_DIR / f'{save_prefix}_plot.png')
-        html_path = self.save_html_report(explanation, OUTPUT_DIR / f'{save_prefix}_report.html')
+        plot_path = self.plot_explanation(explanation, save_dir / f'{save_prefix}_plot.png')
+        html_path = self.save_html_report(explanation, save_dir / f'{save_prefix}_report.html')
         
         return {
             'explanation': explanation,
@@ -230,14 +233,15 @@ class LIMEAnalyzer:
             'feature_weights': feature_weights
         }
     
-    def explain_multiple(self, X_samples, y_samples=None, n_samples=5):
+    def explain_multiple(self, X_samples, y_samples=None, n_samples=5, save_dir=None):
         """
         Explain multiple instances
-        
+
         Args:
             X_samples: Multiple instances to explain
             y_samples: Actual values (optional)
             n_samples: Number of samples to explain
+            save_dir: Directory to write into (defaults to OUTPUT_DIR)
             
         Returns:
             List of explanation results
@@ -256,7 +260,8 @@ class LIMEAnalyzer:
             result = self.explain_and_visualize(
                 instance,
                 actual_value=actual,
-                save_prefix=f'lime_sample_{i}'
+                save_prefix=f'lime_sample_{i}',
+                save_dir=save_dir,
             )
             
             results.append(result)
