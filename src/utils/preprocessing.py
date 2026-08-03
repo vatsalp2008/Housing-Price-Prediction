@@ -9,7 +9,10 @@ from sklearn.model_selection import train_test_split
 from typing import Tuple, List
 import logging
 import sys
-sys.path.append('..')
+from pathlib import Path
+# Make src/ importable when this module is run directly; the bare
+# sys.path.append('..') this replaces was relative to the caller's cwd
+sys.path.append(str(Path(__file__).resolve().parents[1]))
 from config import MODEL_CONFIG
 
 logger = logging.getLogger(__name__)

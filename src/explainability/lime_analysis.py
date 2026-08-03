@@ -10,7 +10,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import logging
 import sys
-sys.path.append('..')
+from pathlib import Path
+# Make src/ importable when this module is run directly; the bare
+# sys.path.append('..') this replaces was relative to the caller's cwd
+sys.path.append(str(Path(__file__).resolve().parents[1]))
 from config import LIME_CONFIG, OUTPUT_DIR, MODEL_CONFIG
 
 logger = logging.getLogger(__name__)

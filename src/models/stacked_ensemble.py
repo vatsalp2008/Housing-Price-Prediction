@@ -10,7 +10,10 @@ from sklearn.model_selection import cross_val_score
 import joblib
 import logging
 import sys
-sys.path.append('..')
+from pathlib import Path
+# Make src/ importable when this module is run directly; the bare
+# sys.path.append('..') this replaces was relative to the caller's cwd
+sys.path.append(str(Path(__file__).resolve().parents[1]))
 from config import BAYESIAN_RIDGE_PARAMS, MODEL_CONFIG, MODELS_DIR
 from .base_learners import get_base_learners
 

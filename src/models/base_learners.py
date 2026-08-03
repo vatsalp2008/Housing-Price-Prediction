@@ -11,7 +11,10 @@ from sklearn.metrics import mean_squared_error, r2_score
 from typing import List, Tuple
 import logging
 import sys
-sys.path.append('..')
+from pathlib import Path
+# Make src/ importable when this module is run directly; the bare
+# sys.path.append('..') this replaces was relative to the caller's cwd
+sys.path.append(str(Path(__file__).resolve().parents[1]))
 from config import (
     XGBOOST_PARAMS,
     LIGHTGBM_PARAMS,
