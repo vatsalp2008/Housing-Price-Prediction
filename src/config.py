@@ -12,9 +12,19 @@ DATA_DIR = PROJECT_ROOT / "data"
 OUTPUT_DIR = PROJECT_ROOT / "outputs"
 MODELS_DIR = PROJECT_ROOT / "models_saved"
 
-# Create directories if they don't exist
-for dir_path in [DATA_DIR, OUTPUT_DIR, MODELS_DIR]:
-    dir_path.mkdir(parents=True, exist_ok=True)
+
+def ensure_directories():
+    """
+    Create the project's data, output and model directories
+
+    Called on import so paths are ready to use, and exposed so callers can
+    recreate them after a cleanup.
+    """
+    for dir_path in [DATA_DIR, OUTPUT_DIR, MODELS_DIR]:
+        dir_path.mkdir(parents=True, exist_ok=True)
+
+
+ensure_directories()
 
 # Data URLs
 AMES_DATASET_URL = "http://jse.amstat.org/v19n3/decock/AmesHousing.txt"
