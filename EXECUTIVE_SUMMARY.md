@@ -53,47 +53,39 @@ reducing base learner capacity is worth investigating.
 
 ## Top 10 Price Drivers
 
-Based on SHAP (SHapley Additive exPlanations) analysis, the following features have the greatest impact on housing prices:
+Measured by permutation importance over the full 586-row test set (10 repeats).
+The dollar figure is how much test RMSE rises when that feature is shuffled,
+against a baseline RMSE of $26,345 — a direct read of how much the model relies
+on it.
 
-### 1. **Overall Quality** (OverallQual)
-- **Impact**: +$40,000 to +$80,000 for excellent quality
-- **Insight**: The single most important factor. Homes rated 9-10 command significant premiums.
+| # | Feature | RMSE increase when shuffled |
+|---|---------|-----------------------------|
+| 1 | `Overall Qual` x `Gr Liv Area` | +$30,548 |
+| 2 | `Neighborhood` (target-encoded) | +$5,866 |
+| 3 | `Overall Qual` x `Year Built` | +$3,387 |
+| 4 | `Lot Area` | +$1,966 |
+| 5 | `Year Remod/Add` | +$1,702 |
+| 6 | `Bsmt Qual` | +$1,597 |
+| 7 | `BsmtFin SF 1` | +$1,264 |
+| 8 | `Gr Liv Area` | +$1,148 |
+| 9 | `1st Flr SF` | +$1,113 |
+| 10 | `Year Built` | +$1,103 |
 
-### 2. **Living Area** (GrLivArea)
-- **Impact**: ~$50 per additional square foot
-- **Insight**: Strong linear relationship. Each 100 sq ft adds approximately $5,000 to value.
+**Reading this table.** Quality and size dominate, but they now enter mostly
+through the `Overall Qual` x `Gr Liv Area` interaction, which is collinear with
+both parents. That one term absorbs importance that would otherwise be split
+between them — with interactions disabled, `Overall Qual` (+$17,609) and
+`Gr Liv Area` (+$14,667) lead instead. Permutation importance divides credit
+between correlated features somewhat arbitrarily, so treat the split within a
+correlated group as indicative rather than exact.
 
-### 3. **Overall Quality × Living Area** (Interaction)
-- **Impact**: Multiplicative effect up to +$30,000
-- **Insight**: High-quality homes with large living areas see exponential value increases.
+Location, via the target-encoded `Neighborhood`, is the strongest non-size
+signal. Everything below rank three contributes under $2,000 of RMSE each.
 
-### 4. **Neighborhood** (Encoded)
-- **Impact**: -$50,000 to +$70,000 depending on location
-- **Insight**: Premium neighborhoods (NoRidge, NridgHt, StoneBr) command 30-40% price premiums.
-
-### 5. **Year Built** (YearBuilt)
-- **Impact**: ~$1,200 per year newer
-- **Insight**: Modern homes (post-2000) valued significantly higher, likely due to updated amenities.
-
-### 6. **Total Basement Area** (TotalBsmtSF)
-- **Impact**: ~$35 per square foot
-- **Insight**: Finished basements add substantial value, especially in larger homes.
-
-### 7. **Garage Area** (GarageArea)
-- **Impact**: ~$40 per square foot
-- **Insight**: 2-3 car garages add $8,000-$12,000 to home value.
-
-### 8. **Kitchen Quality** (KitchenQual)
-- **Impact**: +$15,000 to +$25,000 for excellent kitchens
-- **Insight**: Kitchen renovations show strong ROI in valuation.
-
-### 9. **Exterior Quality** (ExterQual)
-- **Impact**: +$10,000 to +$20,000 for excellent exterior
-- **Insight**: Curb appeal and exterior condition significantly influence buyer perception.
-
-### 10. **Basement Quality** (BsmtQual)
-- **Impact**: +$8,000 to +$15,000 for excellent basements
-- **Insight**: Finished, high-quality basements add measurable value.
+> Earlier versions of this section listed per-feature dollar impacts such as
+> "+$40,000 to +$80,000 for excellent quality" against Kaggle-style column
+> names (`OverallQual`, `GrLivArea`) that do not exist in the Ames dataset used
+> here. Those figures were not measured from this model. The table above is.
 
 ## Market Adjustment Layer
 
