@@ -141,9 +141,11 @@ Housing Price Prediction/
 ### Feature Engineering Pipeline
 
 1. **Interaction Terms**: Automatically generated for key feature pairs
-   - `OverallQual × GrLivArea`
-   - `YearBuilt × TotalBsmtSF`
-   - `GarageArea × GarageCars`
+   - `Overall Qual × Gr Liv Area`
+   - `Year Built × Total Bsmt SF`
+   - `Garage Area × Garage Cars`
+   - Names follow the Ames columns, which contain spaces; a mismatched name is
+     skipped with a warning rather than silently dropped
 
 2. **Target Encoding**: Smoothed encoding for high-cardinality categoricals
    - Prevents target leakage with cross-validation
@@ -214,7 +216,8 @@ result = analyzer.explain_and_visualize(instance, actual_value)
 
 - **Residuals vs Fitted**: Check for heteroscedasticity patterns
 - **Q-Q Plot**: Assess normality of residuals
-- **Breusch-Pagan Test**: Statistical test for homoscedasticity (p > 0.05 desired)
+- **Breusch-Pagan Test**: Statistical test for homoscedasticity (p > 0.05 desired).
+  This model currently **fails** it (p = 5e-22); see `EXECUTIVE_SUMMARY.md`
 
 ### Permutation Importance
 

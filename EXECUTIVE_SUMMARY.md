@@ -197,9 +197,11 @@ For individual predictions, LIME provides:
 
 ### Advanced Feature Engineering
 
-- **Interaction Terms**: 5 key interactions captured (e.g., OverallQual × GrLivArea)
-- **Target Encoding**: Smoothed encoding prevents overfitting on high-cardinality categoricals
-- **Box-Cox Transformations**: 18 skewed features normalized for better model performance
+- **Interaction Terms**: 5 interactions, e.g. `Overall Qual × Gr Liv Area`
+- **Target Encoding**: out-of-fold smoothed encoding on 3 high-cardinality
+  columns (`Neighborhood`, `Exterior 1st`, `Exterior 2nd`)
+- **Box-Cox Transformations**: 59 of 88 features exceed the 0.75 skewness
+  threshold and are transformed (an earlier figure of 18 was not measured)
 
 ### Stacked Ensemble
 
